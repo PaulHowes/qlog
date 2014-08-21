@@ -28,7 +28,29 @@ follows:
 
 # Examples
 
-# TODO List
+## Send All Log Output to Standard Error
+
+    qlog::logger my_log;
+
+## Open or Append to a Log File
+
+    std::ofstream log_file("error.log", std::ios::app);
+    qlog::logger my_log(log_file);
+
+## Open or Append Only Errors and Warnings to a Log File
+
+    std::ofstream log_file("error.log", std::ios::app);
+    qlog::logger my_log(log_file, qlog::warning);
+
+## Emit an Error Message.
+
+    my_log << qlog::error << "This is an error message." << std::endl;
+
+## Emit a Debug Message.
+
+    my_log << qlog::warning << "This is a debug message." << std::endl;
+    // Note that if the verbosity level is qlog::warning, as shown above, this
+    // message will not be sent to the log.
 
 # Contributing
 
