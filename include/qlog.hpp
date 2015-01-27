@@ -2,6 +2,7 @@
 
 #pragma once
 #include <iostream>
+#include <sys/time.h>
 
 /** @namespace qlog */
 namespace qlog {
@@ -104,12 +105,25 @@ namespace qlog {
        * @brief Returns a timestamp.
        * @returns A @c NULL terminated character array that contains a timestamp.
        */
-      const char* timestamp() {
-        time_t raw_time;
-        time(&raw_time);
-        struct tm* time_info = localtime(&raw_time);
-        char* time_str = asctime(time_info);
-        time_str[strlen(time_str) - 1] = ' ';
+      const std::string timestamp() {
+        // Retrieve the time with microsecond accuracy.
+        struct timeval t;
+        struct timezone tz;
+        gettimeofday(&t, &tz);
+
+        // Converts `t.tv_sec`, which is the time in seconds since the epoch to a `struct tm`
+        struct tm time_info;
+        gmtime_r(&t.tv_sec, &time_info);
+
+        // Format as a string.
+        const size_t maxsize = 80;
+        char time_str[maxsize];
+        strftime(time_str, maxsize, "%Y-%m-%dT%H:%M:%S", &time_info);
+
+        // Append the milliseconds and the `Z`
+        sprintf(time_str, "%s.%dZ", time_str, t.tv_usec / 1000);
+
+        // Done.
         return time_str;
       }
 
@@ -138,7 +152,7 @@ namespace qlog {
    */
   logger& error(logger& l) {
     l.set_severity(severity::ERROR);
-    l << l.timestamp() << "[ERROR] ";
+    l << l.timestamp() << " [ERROR] ";
     return l;
   }
 
@@ -149,7 +163,7 @@ namespace qlog {
    */
   logger& warning(logger& l) {
     l.set_severity(severity::WARNING);
-    l << l.timestamp() << "[WARNING] ";
+    l << l.timestamp() << " [WARNING] ";
     return l;
   }
 
@@ -160,7 +174,7 @@ namespace qlog {
    */
   logger& info(logger& l) {
     l.set_severity(severity::INFO);
-    l << l.timestamp() << "[INFO] ";
+    l << l.timestamp() << " [INFO] ";
     return l;
   }
 
@@ -171,7 +185,7 @@ namespace qlog {
    */
   logger& debug(logger& l) {
     l.set_severity(severity::DEBUG);
-    l << l.timestamp() << "[DEBUG] ";
+    l << l.timestamp() << " [DEBUG] ";
     return l;
   }
 }

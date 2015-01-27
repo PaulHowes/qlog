@@ -48,7 +48,7 @@ follows:
 
 ## Emit a Debug Message.
 
-    my_log << qlog::warning << "This is a debug message." << std::endl;
+    my_log << qlog::debug << "This is a debug message." << std::endl;
     // Note that if the verbosity level is qlog::warning, as shown above, this
     // message will not be sent to the log.
 
