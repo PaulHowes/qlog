@@ -49,8 +49,8 @@ namespace qlog {
        * @param[in] o Constant value to emit.
        * @returns a reference to the @c logger object for chaining.
        */
-      template<typename _object_t>
-      logger& operator<<(const _object_t& o) {
+      template<typename T>
+      logger& operator<<(const T& o) {
         if(_severity <= _verbosity) {
           (*_output) << o;
         }
@@ -62,8 +62,8 @@ namespace qlog {
        * @param[in] o Value to emit.
        * @returns a reference to the @c logger object for chaining.
        */
-      template<typename _object_t>
-      logger& operator<<(_object_t& o) {
+      template<typename T>
+      logger& operator<<(T& o) {
         if(_severity <= _verbosity) {
           std::cout << o;
         }
