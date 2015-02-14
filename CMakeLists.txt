@@ -2,14 +2,16 @@ cmake_minimum_required(VERSION 2.8.12)
 project(asf)
 
 # Configures the compiler, regardless of the build type.
-if("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   add_definitions(-std=c++11
-                  -stdlib=libc++
                   -Weverything
                   -Wno-c++98-compat
                   -Wno-missing-prototypes
                   )
-elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+  if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
+    add_definitions(-stdlib=libc++)
+  endif()
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   add_definitions(-std=c++11
                   -Wall
                   -Wextra
