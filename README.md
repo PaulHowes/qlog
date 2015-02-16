@@ -44,13 +44,20 @@ follows:
 
 ## Emit an Error Message.
 
-    my_log << qlog::error << "This is an error message." << std::endl;
+    my_log(qlog::error) << "This is an error message";
 
 ## Emit a Debug Message.
 
-    my_log << qlog::debug << "This is a debug message." << std::endl;
+    my_log(qlog::debug) << "This is a debug message.";
     // Note that if the verbosity level is qlog::warning, as shown above, this
     // message will not be sent to the log.
+
+# To Do
+
+1.  Move all configuration to a separate class.
+2.  Add log aging by size (e.g. 1 MB) or time span (e.g. daily, weekly, or monthly)
+3.  When aging the log, maintain a maximum number of "old" log files.
+4.  Add a dependency on the [ASF](http://github.com/PaulHowes/asf) library for formatting.
 
 # Contributing
 
