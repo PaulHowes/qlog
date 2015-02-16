@@ -2,24 +2,77 @@
 
 #pragma once
 #include <iostream>
+#include <vector>
 #include <sys/time.h>
 
 /** @namespace qlog */
 namespace qlog {
 
   /**
-   * @brief Log message severity levels.
+   * @brief Used to define log severity levels.
+   *
+   * Each log level has a name and a number. The number is used when comparing the current 
+   * verbosity level with the severity level of a message. If the message being emitted is lower
+   * than the verbosity level of the log, then it will not be visible.
    */
-  enum class severity {
-    /** @brief Error level. */
-    ERROR,
-    /** @brief Warning level. */
-    WARNING,
-    /** @brief Informational level. */
-    INFO,
-    /** @brief Debug level. */
-    DEBUG
+  struct severity_t {
+    /**
+     * @brief The severity level that is used in comparisons.
+     */
+    unsigned long level;
+
+    /**
+     * @brief The name of the severity.
+     */
+    char const* name;
+
+    /**
+     * @brief Initializes a new qlog::severity_t instance with a level and name.
+     * @param[in] l Level of the new severity.
+     * @param[in] n Name of the new severity.
+     */
+    severity_t(unsigned long l, char const* n) : level(l), name(n) { }
   };
+
+  /**
+   * @brief The qlog::none severity is intended to be used when setting the verbosity of the log to
+   *        prevent any messages from being emitted.
+   */
+  const severity_t none (  0, "NONE");
+
+  /**
+   * @brief The message is for a catastrophic event that caused the program to terminate
+   *        unexpectedly.
+   */
+  const severity_t fatal(100, "FATAL");
+
+  /**
+   * @brief The message is for an unexpected event that did not cause the program to terminate,
+   *        but should be investigated.
+   */
+  const severity_t error(200, "ERROR");
+
+  /**
+   * @brief The message is for an event that may have been expected, but is not desired.
+   */
+  const severity_t warn (300, "WARN");
+
+  /**
+   * @brief The message is for informational purposes only.
+   */
+  const severity_t info (400, "INFO");
+
+  /**
+   * @brief The message is for debugging the program, and can otherwise be ignored.
+   */
+  const severity_t debug(500, "DEBUG");
+
+  /**
+   * @brief The qlog::all severity is intended to be used when setting the verbosity of the log to
+   *        include all messages, including custom severity levels that may be defined external
+   *        to this module.
+   */
+  const severity_t all  (999, "ALL");
 
   /**
    * @brief Simple logging class.
@@ -27,13 +80,18 @@ namespace qlog {
   class logger {
     public:
       /**
-       * @brief Constructs a new instance of @c logger.
+       * @brief Initializes a new qlog::logger instance with a verbosity level.
+       */
+      logger(severity_t const& v) :
+          _output(&std::cerr), _severity(all.level), _verbosity(v.level) { }
+
+      /**
+       * @brief Initializes a new qlog::logger instance with an output stream and verbosity level.
        * @param[in] o Stream to which logging output is sent.
        * @param[in] v Default verbosity level of the log.
        */
-      logger(std::ostream& o = std::cerr,
-             severity v = severity::DEBUG)
-        : _output(&o), _severity(severity::DEBUG), _verbosity(v) {
+      logger(std::ostream& o = std::cerr, severity_t const& v = all)
+        : _output(&o), _severity(all.level), _verbosity(v.level) {
       }
 
       /**
@@ -42,6 +100,24 @@ namespace qlog {
       ~logger() {
         // Adds a newline and flushes the stream.
         (*_output) << std::endl;
+      }
+
+      /**
+       * @brief Generates the timestamp and log level at the beginning of the line.
+       * @param[in] l Severity level of the entry.
+       *
+       * This is used to generate the timestamp and emit the severity level of the message that
+       * follows. For example:
+       *
+       *     auto log = qlog::logger;
+       *     log(qlog::debug) << "This is a debug message";
+       */
+      logger& operator()(severity_t const& l) {
+        set_severity(l);
+        if(_severity <= _verbosity) {
+          (*_output) << std::endl << timestamp() << " [" << l.name << "] ";
+        }
+        return *this;
       }
 
       /**
@@ -71,15 +147,6 @@ namespace qlog {
       }
 
       /**
-       * @brief Specialized insertion operator that accepts log manipulators.
-       * @param[in] p Pointer to the log manipulator function.
-       * @returns a reference to the @c logger object for chaining.
-       */
-      logger& operator<<(logger& (*p)(logger&)) {
-        return p(*this);
-      }
-
-      /**
        * @brief Specialized insertion operator that accepts @c std::ostream manipulators.
        * @param[in] p Pointer to the @c std::ostream manipulator function.
        * @returns a reference to the @c logger object for chaining.
@@ -89,15 +156,13 @@ namespace qlog {
         return *this;
       }
 
-    private:
-
       /**
        * @brief Sets the new logging level.
        * @param[in] l The new logging level.
        * @returns a reference to the @c logger object for chaining.
        */
-      logger& set_severity(const severity l) {
-        _severity = l;
+      logger& set_severity(const severity_t l) {
+        _severity = l.level;
         return *this;
       }
 
@@ -127,66 +192,16 @@ namespace qlog {
         return time_str;
       }
 
+    private:
+
       /** @brief Stream that receives log messages. */
       std::ostream* _output;
 
       /** @brief Current message severity level. */
-      severity _severity;
+      unsigned long _severity;
 
       /** @brief Current log verbosity level. */
-      severity _verbosity;
-
-      /*
-       * The log manipulators need access to logger::timestamp() and logger::set_severity()
-       */
-      friend logger& error(logger&);
-      friend logger& warning(logger&);
-      friend logger& info(logger&);
-      friend logger& debug(logger&);
+      unsigned long _verbosity;
   };
-
-  /**
-   * @brief Log manipulator that changes output to the @c ERROR severity level.
-   * @param[in] l Instance of @c logger that invoked the manipulator.
-   * @returns a reference to the @c logger object for chaining.
-   */
-  logger& error(logger& l) {
-    l.set_severity(severity::ERROR);
-    l << l.timestamp() << " [ERROR] ";
-    return l;
-  }
-
-  /**
-   * @brief Log manipulator that changes output to the @c WARNING severity level.
-   * @param[in] l Instance of @c logger that invoked the manipulator.
-   * @returns a reference to the @c logger object for chaining.
-   */
-  logger& warning(logger& l) {
-    l.set_severity(severity::WARNING);
-    l << l.timestamp() << " [WARNING] ";
-    return l;
-  }
-
-  /**
-   * @brief Log manipulator that changes output to the @c INFO severity level.
-   * @param[in] l Instance of @c logger that invoked the manipulator.
-   * @returns a reference to the @c logger object for chaining.
-   */
-  logger& info(logger& l) {
-    l.set_severity(severity::INFO);
-    l << l.timestamp() << " [INFO] ";
-    return l;
-  }
-
-  /**
-   * @brief Log manipulator that changes output to the @c DEBUG severity level.
-   * @param[in] l Instance of @c logger that invoked the manipulator.
-   * @returns a reference to the @c logger object for chaining.
-   */
-  logger& debug(logger& l) {
-    l.set_severity(severity::DEBUG);
-    l << l.timestamp() << " [DEBUG] ";
-    return l;
-  }
 }
 

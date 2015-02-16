@@ -7,6 +7,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
                   -Weverything
                   -Wno-c++98-compat
                   -Wno-missing-prototypes
+                  -Wno-global-constructors
                   )
   if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
     add_definitions(-stdlib=libc++)
